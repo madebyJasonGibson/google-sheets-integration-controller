@@ -22,6 +22,9 @@ function showResponse(data, section = 'mainContent') {
         case 'data-operations-section':
             responseElementId = 'data-response';
             break;
+        case 'integrations-section':
+            responseElementId = 'integrations-response'; // New response area for integrations
+            break;
         case 'settings-section':
              // Settings section doesn't have a dedicated response area for API calls
              // We can log to console or show a specific message if needed
@@ -100,7 +103,7 @@ function showApiHistory() {
     }
 
     if (history.length === 0) {
-        historyDisplay.textContent = "No API history recorded yet.";
+        historyDisplay.textContent = "No local API history recorded yet.";
         return;
     }
 
@@ -241,7 +244,7 @@ function clearCache() {
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
         localStorage.removeItem(API_HISTORY_STORAGE_KEY);
 
-        // Clear input fields
+        // Clear input fields that might have been loaded from storage
         document.getElementById('sheetId').value = '';
         document.getElementById('apiKey').value = '';
 
@@ -294,9 +297,10 @@ function loadSettings() {
     try {
         const settingsJson = localStorage.getItem(SETTINGS_STORAGE_KEY);
         if (!settingsJson) {
-             console.log("No settings found in local storage.");
+             console.log("No settings found in local storage. Applying defaults.");
              // Apply default theme if no settings found
              toggleDarkMode('light');
+             resetSettingsUI(); // Apply default unchecked state for other settings
              return;
         }
 
@@ -308,50 +312,49 @@ function loadSettings() {
         toggleDarkMode(settings.darkMode ? 'dark' : 'light');
 
         // Save/Load inputs (Sheet ID, API Key)
-        document.querySelector('input[name="save-sheet-id"]').checked = settings.saveSheetId || false;
-        document.querySelector('input[name="save-api-key"]').checked = settings.saveApiKey || false;
+        // Use optional chaining (?.) for safety in case properties are missing from old storage
+        document.querySelector('input[name="save-sheet-id"]').checked = settings.saveSheetId ?? false;
+        document.querySelector('input[name="save-api-key"]').checked = settings.saveApiKey ?? false;
 
-        // Load Sheet ID and API Key if the save setting was true
+        // Load Sheet ID and API Key if the save setting was true AND value exists
         if (settings.saveSheetId && settings.sheetId) {
             document.getElementById('sheetId').value = settings.sheetId;
         } else {
-             document.getElementById('sheetId').value = ''; // Clear if not saved
+             document.getElementById('sheetId').value = ''; // Clear if not saved or value missing
         }
         if (settings.saveApiKey && settings.apiKey) {
             document.getElementById('apiKey').value = settings.apiKey;
         } else {
-             document.getElementById('apiKey').value = ''; // Clear if not saved
+             document.getElementById('apiKey').value = ''; // Clear if not saved or value missing
         }
 
         // Apply other placeholder settings states
-        document.querySelector('input[name="data-cache"]').checked = settings.enableCaching || false;
-        document.querySelector('input[name="autoload"]').checked = settings.autoRefresh || false;
-        document.querySelector('input[name="compress-response"]').checked = settings.compressResponse || false;
-        document.querySelector('input[name="notification"]').checked = settings.enableNotifications || false;
-        document.querySelector('input[name="notification-errors"]').checked = settings.notifyOnErrors || false;
+        document.querySelector('input[name="data-cache"]').checked = settings.enableCaching ?? false;
+        document.querySelector('input[name="autoload"]').checked = settings.autoRefresh ?? false;
+        document.querySelector('input[name="compress-response"]').checked = settings.compressResponse ?? false;
+        document.querySelector('input[name="notification"]').checked = settings.enableNotifications ?? false;
+        document.querySelector('input[name="notification-errors"]').checked = settings.notifyOnErrors ?? false;
 
     } catch (e) {
         console.error("Failed to load settings from local storage:", e);
         // Ensure a default state is applied even if loading fails
          toggleDarkMode('light');
-         resetSettingsUI();
+         resetSettingsUI(); // Reset UI to default unchecked states
     }
 }
 
 function resetSettingsUI() {
-     // Set checkboxes to unchecked, radio to light
-     document.querySelector('input[name="save-api-key"]').checked = false;
-     document.querySelector('input[name="save-sheet-id"]').checked = false;
-     document.querySelector('input[name="data-cache"]').checked = false;
-     document.querySelector('input[name="autoload"]').checked = false;
-     document.querySelector('input[name="compress-response"]').checked = false;
-     document.querySelector('input[name="notification"]').checked = false;
-     document.querySelector('input[name="notification-errors"]').checked = false;
+     // Set checkboxes to unchecked, radio to light theme
+     document.querySelectorAll('#settings-section input[type="checkbox"]').forEach(checkbox => {
+         checkbox.checked = false;
+     });
 
      const radios = document.querySelectorAll('input[type="radio"][name="theme-radio"]');
       radios.forEach(radio => {
           radio.checked = (radio.value === 'light'); // Check light mode radio
       });
+      // Manually update toggle button icon if it doesn't sync automatically
+      // toggleDarkMode('light'); // Calling this here might cause a save loop if called during load
 }
 
 // --- UI Functions ---
@@ -365,7 +368,7 @@ function toggleSidebar() {
 // Function to show specific content section
 function showSection(sectionId, sourceElement) {
     // Hide all content sections
-    const sections = ['mainContent', 'api-section', 'data-operations-section', 'settings-section'];
+    const sections = ['mainContent', 'api-section', 'data-operations-section', 'integrations-section', 'settings-section'];
     sections.forEach(id => {
         const sec = document.getElementById(id);
         if (sec) sec.style.display = 'none';
@@ -375,23 +378,17 @@ function showSection(sectionId, sourceElement) {
     const sectionToShow = document.getElementById(sectionId);
     if (sectionToShow) {
         sectionToShow.style.display = 'block';
-        // If navigating to API history, update its display
+        // If navigating to specific sections, update their display areas
         if (sectionId === 'api-section') {
-             // Check if the 'Audit Logs' button was specifically clicked, otherwise show default response area
-             // For now, always refresh the history view when the API section is shown.
-             // Future improvement: Only show history if user clicks the audit log button within the API section.
-             // As requested, the button calls showApiHistory directly, so this isn't strictly needed here,
-             // but it ensures the area is cleared/initialised correctly when section is changed.
-             // Let's ensure the default 'No response yet' or history is displayed on section entry.
              document.getElementById('api-response').textContent = 'Select an API tool above or view history.';
-
         } else if (sectionId === 'data-operations-section') {
              document.getElementById('data-response').textContent = 'Select a data operation above.';
         } else if (sectionId === 'mainContent') {
              document.getElementById('response').textContent = 'Configure Sheet ID and API Key above.';
-        } else if (sectionId === 'settings-section') {
-             // Settings section doesn't have a response area
+        } else if (sectionId === 'integrations-section') {
+             document.getElementById('integrations-response').textContent = 'Integration specific responses will appear here (Placeholders).';
         }
+        // Settings section doesn't need initial text in a response area
     }
 
     // Update active class on sidebar links
@@ -449,21 +446,45 @@ document.addEventListener('DOMContentLoaded', () => {
      showSection('mainContent', document.querySelector('.nav-link'));
 
     // Add event listeners for settings controls to save state
-    const settingsInputs = document.querySelectorAll('#settings-section input, #settings-section select, #settings-section textarea');
-    settingsInputs.forEach(input => {
-        // Listen for 'change' on checkboxes/radios/selects, 'input' on text fields
-        const eventType = (input.type === 'checkbox' || input.type === 'radio' || input.tagName === 'SELECT') ? 'change' : 'input';
-        input.addEventListener(eventType, saveSettings);
-    });
+    // Use a common parent element like #settings-section for efficiency
+    const settingsSection = document.getElementById('settings-section');
+    if (settingsSection) {
+        settingsSection.addEventListener('change', (event) => {
+            // Save settings when any input within the settings section changes state
+            // This covers checkboxes and radio buttons primarily
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT' || event.target.tagName === 'TEXTAREA') {
+                saveSettings();
+            }
+        });
+         // Also listen for input events on text fields within settings if any are added later
+         settingsSection.addEventListener('input', (event) => {
+             if (event.target.tagName === 'INPUT' && event.target.type === 'text') {
+                 saveSettings();
+             }
+         });
+    }
 
-     // Listen for changes on sheetId and apiKey inputs if their 'save locally' boxes are checked
-     // We need to trigger saveSettings when these specific inputs change IF the save checkbox is checked.
-     // The saveSettings function already checks the box state before saving the values.
-     // We just need to ensure saveSettings is called when they change.
-    document.getElementById('sheetId').addEventListener('input', saveSettings);
-    document.getElementById('apiKey').addEventListener('input', saveSettings);
+
+     // Listen for changes on sheetId and apiKey inputs specifically
+     // These are outside the settings section but affect settings storage
+     document.getElementById('sheetId')?.addEventListener('input', saveSettings);
+     document.getElementById('apiKey')?.addEventListener('input', saveSettings);
+
+     // Listen for changes on the theme radio buttons directly if needed,
+     // though the change listener on settingsSection might cover it.
+     // Let's add a specific listener for the radios to ensure theme update logic runs
+     const themeRadios = document.querySelectorAll('input[type="radio"][name="theme-radio"]');
+     themeRadios.forEach(radio => {
+         radio.addEventListener('change', (event) => {
+             if (event.target.checked) {
+                 toggleDarkMode(event.target.value);
+             }
+         });
+     });
+
 
      // Expose functions globally so they can be called from inline onclick attributes
+     // This is necessary because the script is not a module with an importmap.
      window.toggleSidebar = toggleSidebar;
      window.showSection = showSection;
      window.toggleDarkMode = toggleDarkMode;
@@ -471,11 +492,8 @@ document.addEventListener('DOMContentLoaded', () => {
      window.appendData = appendData;
      window.updateData = updateData;
      window.testApiConnection = testApiConnection;
-     window.clearCache = clearCache;
-     window.showApiHistory = showApiHistory;
-
-     // Placeholder functions that were called directly by onclick but now have logic
-     // No need to expose others unless they are called from HTML
+     window.clearCache = clearCache; // Clear local storage button
+     window.showApiHistory = showApiHistory; // Show local history button
 });
 
 // Note: Placeholder functions like 'enable local caching', 'auto-refresh', etc.,
@@ -484,4 +502,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // periodically fetching data, or altering request headers) is not implemented
 // in this client-side code, as that would require more complex state management
 // or a backend component. The saved state serves as a UI-only representation
-// of these "settings".
+// of these "settings". Similarly, the Integrations section is a UI placeholder.
