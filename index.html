@@ -43,6 +43,11 @@
                     <span class="nav-text">Data Operations</span>
                 </button>
                 
+                <button onclick="showSection('integrations-section', this)" class="nav-link flex items-center px-4 py-3 hover:bg-fuchsia-50 cursor-pointer w-full text-left">
+                    <i class="material-icons mr-2">link</i>
+                    <span class="nav-text">Integrations</span>
+                </button>
+
                 <button onclick="showSection('settings-section', this)" class="nav-link flex items-center px-4 py-3 hover:bg-fuchsia-50 cursor-pointer w-full text-left">
                     <i class="material-icons mr-2">settings</i>
                     <span class="nav-text">Settings</span>
@@ -123,10 +128,10 @@
                             <i class="material-icons mr-2">wifi_tethering</i> Test Connection
                         </button>
                         <button onclick="clearCache()" class="inline-flex items-center justify-center px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm">
-                            <i class="material-icons mr-2">cleaning_services</i> Clear Cache
+                            <i class="material-icons mr-2">cleaning_services</i> Clear Local Storage
                         </button>
                         <button onclick="showApiHistory()" class="inline-flex items-center justify-center px-4 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg text-sm">
-                            <i class="material-icons mr-2">history</i> Audit Logs (Placeholder)
+                            <i class="material-icons mr-2">history</i> Show Local History
                         </button>
                     </div>
                 </div>
@@ -189,7 +194,7 @@
                              <textarea id="appendDataInput" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder='e.g., ["New Item", "20.50", "Pending"]'></textarea>
                          </div>
                          <div>
-                             <label for="updateRangeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Range for Update (e.g., `Sheet1!A2`)</label>
+                             <label for="updateRangeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1 mt-2">Range for Update (e.g., `Sheet1!A2`)</label>
                              <input type="text" id="updateRangeInput" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder="e.g., Sheet1!A2">
                              <label for="updateDataInput" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1 mt-2">Data for Update (JSON array e.g., `[["new value 1", "new value 2"]]`)</label>
                               <textarea id="updateDataInput" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder='e.g., [["Updated Item", "30.00", "Complete"]]'></textarea>
@@ -202,6 +207,61 @@
                         <i class="material-icons mr-2">code</i> Last API Response
                     </h2>
                     <div id="data-response" class="rounded bg-gray-100 dark:bg-gray-700 p-4 overflow-auto text-sm font-mono leading-relaxed text-gray-800 dark:text-gray-300 max-h-60">
+                         No response yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+         <!-- Integrations Section -->
+        <div id="integrations-section" class="card shadow rounded-lg overflow-hidden mb-6" style="display: none;">
+             <div class="px-6 py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white shadow-lg">
+                <h1 class="text-3xl font-bold flex items-center"><i class="material-icons mr-2">link</i> Integrations (Placeholder)</h1>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+                        Google API Integrations (Placeholder)
+                    </h2>
+                    <p class="text-gray-700 dark:text-gray-300">
+                        This section is for connecting other Google APIs to enhance your data workflows.
+                        Implementing actual integrations requires more complex authentication and potentially a backend service.
+                        The options below are placeholders to illustrate potential future features.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Placeholder Integration Cards -->
+                        <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow flex items-center space-x-4">
+                            <i class="material-icons text-blue-600 dark:text-blue-400 text-4xl">calendar_today</i>
+                            <div>
+                                <h3 class="font-semibold text-gray-800 dark:text-gray-200">Google Calendar API</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Sync data with Calendar events.</p>
+                                <button class="mt-2 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-600">Configure (Placeholder)</button>
+                            </div>
+                        </div>
+                         <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow flex items-center space-x-4">
+                            <i class="material-icons text-yellow-600 dark:text-yellow-400 text-4xl">folder</i>
+                            <div>
+                                <h3 class="font-semibold text-gray-800 dark:text-gray-200">Google Drive API</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Manage sheet files in Drive.</p>
+                                <button class="mt-2 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-600">Configure (Placeholder)</button>
+                            </div>
+                        </div>
+                         <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow flex items-center space-x-4">
+                            <i class="material-icons text-green-600 dark:text-green-400 text-4xl">email</i>
+                            <div>
+                                <h3 class="font-semibold text-gray-800 dark:text-gray-200">Gmail API</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Automate emails based on sheet data.</p>
+                                <button class="mt-2 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-600">Configure (Placeholder)</button>
+                            </div>
+                        </div>
+                        <!-- Add more placeholders as needed -->
+                    </div>
+                </div>
+                 <div class="space-y-4">
+                    <h2 class="text-xl font-medium text-gray-700 dark:text-gray-200">
+                        <i class="material-icons mr-2">code</i> Integration Response (Placeholder)
+                    </h2>
+                    <div id="integrations-response" class="rounded bg-gray-100 dark:bg-gray-700 p-4 overflow-auto text-sm font-mono leading-relaxed text-gray-800 dark:text-gray-300 max-h-60">
                          No response yet.
                     </div>
                 </div>
@@ -239,7 +299,7 @@
                             </div>
                         </div>
                         <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
-                            <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Data & Performance</h3>
+                            <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Data & Performance (Placeholders)</h3>
                             <div class="flex flex-col space-y-4 text-gray-700 dark:text-gray-300">
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" name="data-cache" checked>
@@ -260,7 +320,7 @@
 
                  <div class="space-y-4">
                     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-                        <i class="material-icons mr-2">notifications</i> Notifications
+                        <i class="material-icons mr-2">notifications</i> Notifications (Placeholders)
                     </h2>
                      <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
                           <div class="flex flex-col space-y-4 text-gray-700 dark:text-gray-300">
