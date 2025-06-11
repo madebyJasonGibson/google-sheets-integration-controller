@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Data Pipeline</title>
+    <!-- Axios CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Material Icons Font -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Roboto Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar bg-white shadow-lg flex flex-col w-64 min-h-screen">
+        <div class="p-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 border-b border-fuchsia-300">
+            <h1 class="text-xl font-bold text-white flex items-center justify-between">
+                <span>SheetMateUI</span>
+                <button onclick="toggleSidebar()" class="cursor-pointer material-icons">menu</button>
+            </h1>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto">
+            <div class="p-4 space-y-1">
+                <!-- Use buttons for consistent event handling -->
+                <button onclick="showSection('mainContent', this)" class="nav-link flex items-center px-4 py-3 text-fuchsia-600 font-medium w-full text-left active">
+                    <i class="material-icons mr-3">home</i>
+                    <span class="nav-text">Dashboard</span>
+                </button>
+                
+                <button onclick="showSection('api-section', this)" class="nav-link flex items-center px-4 py-3 hover:bg-fuchsia-50 cursor-pointer w-full text-left">
+                    <i class="material-icons mr-2">api</i>
+                    <span class="nav-text">API Management</span>
+                </button>
+                
+                <button onclick="showSection('data-operations-section', this)" class="nav-link flex items-center px-4 py-3 hover:bg-fuchsia-50 cursor-pointer w-full text-left">
+                    <i class="material-icons mr-2">data_usage</i>
+                    <span class="nav-text">Data Operations</span>
+                </button>
+                
+                <button onclick="showSection('settings-section', this)" class="nav-link flex items-center px-4 py-3 hover:bg-fuchsia-50 cursor-pointer w-full text-left">
+                    <i class="material-icons mr-2">settings</i>
+                    <span class="nav-text">Settings</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-auto px-4 py-8 max-w-66xl" id="contentArea">
+        <!-- Dashboard / Default View -->
+        <div id="mainContent" class="card shadow rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white shadow-lg">
+                <h1 class="text-3xl font-bold flex items-center">Google Sheets Data Pipeline</h1>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+                        <i class="material-icons mr-2">settings</i> Configuration
+                    </h2>
+                     <button onclick="toggleDarkMode()" class="p-2 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                        <i class="material-icons" id="theme-icon2">dark_mode</i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <label for="sheetId" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Sheet ID</label>
+                    <input type="text" id="sheetId" 
+      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-fuchsia-500 focus:border-fuchsia-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder="Enter Google Sheet ID">
+                </div>
+                
+                <div class="space-y-4">
+                    <label for="apiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">API Key</label>
+                    <input type="text" id="apiKey" 
+      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-fuchsia-500 focus:border-fuchsia-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder="Enter API Key">
+                </div>
+                
+                <div class="space-y-4">
+                    <h2 class="text-xl font-medium text-gray-700 dark:text-gray-200 flex items-center">
+                        <i class="material-icons mr-2">info</i> Quick Info
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="rounded-lg bg-blue-50 dark:bg-blue-800/20 p-4">
+                            <h3 class="font-medium text-blue-800 dark:text-blue-200">Welcome</h3>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Configure your Sheet ID and API Key to get started.</p>
+                        </div>
+                         <div class="rounded-lg bg-purple-50 dark:bg-purple-800/20 p-4">
+                            <h3 class="font-medium text-purple-800 dark:text-purple-200">Explore Tabs</h3>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Use the sidebar to navigate API Management, Data Operations, and Settings.</p>
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="space-y-4">
+                    <h2 class="text-xl font-medium text-gray-700 dark:text-gray-200">
+                        <i class="material-icons mr-2">code</i> Last API Response
+                    </h2>
+                    <div id="response" class="rounded bg-gray-100 dark:bg-gray-700 p-4 overflow-auto text-sm font-mono leading-relaxed text-gray-800 dark:text-gray-300 max-h-60">
+                         No response yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Management Section -->
+        <div id="api-section" class="card shadow rounded-lg overflow-hidden mb-6" style="display: none;">
+             <div class="px-6 py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white shadow-lg">
+                <h1 class="text-3xl font-bold flex items-center">API Management</h1>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+                        <i class="material-icons mr-2">api</i> API Tools
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button onclick="testApiConnection()" class="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm">
+                            <i class="material-icons mr-2">wifi_tethering</i> Test Connection
+                        </button>
+                        <button onclick="clearCache()" class="inline-flex items-center justify-center px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm">
+                            <i class="material-icons mr-2">cleaning_services</i> Clear Cache
+                        </button>
+                        <button onclick="showApiHistory()" class="inline-flex items-center justify-center px-4 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg text-sm">
+                            <i class="material-icons mr-2">history</i> Audit Logs (Placeholder)
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200">
+                        <i class="material-icons mr-2">help_outline</i> Quick Guide
+                    </h2>
+                    <div class="rounded bg-gray-100 dark:bg-gray-700 p-4 text-gray-800 dark:text-gray-300">
+                        <p class="mb-2"><span class="font-medium">Sheet ID:</span> Set up a valid Google Sheet ID in the Dashboard.</p>
+                        <p class="mb-2"><span class="font-medium">API Key:</span> Create a valid API key with access to Google Sheets API (and potentially Google Drive API depending on setup) in the Dashboard.</p>
+                        <p class="mt-2 font-medium">Note:</p>
+                        <ul class="list-disc list-inside text-sm">
+                            <li>Most operations require edit permissions on the sheet.</li>
+                            <li>Testing connection verifies access to sheet metadata.</li>
+                            <li>Audit logs functionality is a placeholder.</li>
+                        </ul>
+                    </div>
+                </div>
+                 <div class="space-y-4">
+                    <h2 class="text-xl font-medium text-gray-700 dark:text-gray-200">
+                        <i class="material-icons mr-2">code</i> Last API Response
+                    </h2>
+                    <div id="api-response" class="rounded bg-gray-100 dark:bg-gray-700 p-4 overflow-auto text-sm font-mono leading-relaxed text-gray-800 dark:text-gray-300 max-h-60">
+                         No response yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+         <!-- Data Operations Section -->
+        <div id="data-operations-section" class="card shadow rounded-lg overflow-hidden mb-6" style="display: none;">
+             <div class="px-6 py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white shadow-lg">
+                <h1 class="text-3xl font-bold flex items-center">Data Operations</h1>
+            </div>
+            <div class="p-6 space-y-6">
+                 <div class="space-y-4">
+                    <h2 class="text-xl font-medium text-gray-700 dark:text-gray-200 flex items-center">
+                        <i class="material-icons mr-2">view_lists</i> Operations
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button onclick="getSheetData()" class="inline-flex items-center justify-center px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-medium rounded-lg text-sm">
+                            <i class="material-icons mr-2">cloud_download</i> Get Data
+                        </button>
+                        <button onclick="appendData()" class="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm">
+                            <i class="material-icons mr-2">add</i> Add Row
+                        </button>
+                        <button onclick="updateData()" class="inline-flex items-center justify-center px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm">
+                            <i class="material-icons mr-2">edit</i> Update Row
+                        </button>
+                    </div>
+                </div>
+
+                 <!-- Input area for Add/Update Data -->
+                 <div class="space-y-4">
+                     <h3 class="text-lg font-medium text-gray-700 dark:text-gray-200">Input Data / Range</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                             <label for="appendDataInput" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Data for Append (JSON array e.g., `["value1", "value2"]`)</label>
+                             <textarea id="appendDataInput" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder='e.g., ["New Item", "20.50", "Pending"]'></textarea>
+                         </div>
+                         <div>
+                             <label for="updateRangeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Range for Update (e.g., `Sheet1!A2`)</label>
+                             <input type="text" id="updateRangeInput" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder="e.g., Sheet1!A2">
+                             <label for="updateDataInput" class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1 mt-2">Data for Update (JSON array e.g., `[["new value 1", "new value 2"]]`)</label>
+                              <textarea id="updateDataInput" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" placeholder='e.g., [["Updated Item", "30.00", "Complete"]]'></textarea>
+                         </div>
+                     </div>
+                 </div>
+
+                 <div class="space-y-4">
+                    <h2 class="text-xl font-medium text-gray-700 dark:text-gray-200">
+                        <i class="material-icons mr-2">code</i> Last API Response
+                    </h2>
+                    <div id="data-response" class="rounded bg-gray-100 dark:bg-gray-700 p-4 overflow-auto text-sm font-mono leading-relaxed text-gray-800 dark:text-gray-300 max-h-60">
+                         No response yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="card shadow rounded-lg overflow-hidden mb-6" style="display: none;">
+             <div class="px-6 py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white shadow-lg">
+                <h1 class="text-3xl font-bold flex items-center">Settings</h1>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+                        <i class="material-icons mr-2">settings</i> General Settings
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+                            <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Theme</h3>
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="mr-2 whitespace-nowrap text-gray-700 dark:text-gray-300">Dark Mode Toggle:</span>
+                                <button onclick="toggleDarkMode()" class="p-2 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                                    <i class="material-icons" id="theme-icon">dark_mode</i> <!-- Unique ID -->
+                                </button>
+                            </div>
+                             <div class="flex items-center gap-4 text-gray-700 dark:text-gray-300">
+                                <label class="radio-inline mr-4 flex items-center">
+                                    <input type="radio" name="theme-radio" value="light" checked class="mr-1">
+                                    Light
+                                </label>
+                                <label class="radio-inline mr-4 flex items-center">
+                                    <input type="radio" name="theme-radio" value="dark" class="mr-1">
+                                    Dark
+                                </label>
+                            </div>
+                        </div>
+                        <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+                            <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Data & Performance</h3>
+                            <div class="flex flex-col space-y-4 text-gray-700 dark:text-gray-300">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="data-cache" checked>
+                                    <span class="ml-2 text-sm"> Enable local caching (Placeholder)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="autoload" checked>
+                                    <span class="ml-2 text-sm"> Auto-refresh data (Placeholder)</span>
+                                </label>
+                                 <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="compress-response">
+                                    <span class="ml-2 text-sm"> Compress API responses (Placeholder)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+                        <i class="material-icons mr-2">notifications</i> Notifications
+                    </h2>
+                     <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+                          <div class="flex flex-col space-y-4 text-gray-700 dark:text-gray-300">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="notification" checked>
+                                <span class="ml-2 text-sm"> Enable email notifications (Placeholder)</span>
+                            </label>
+                             <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="notification-errors">
+                                <span class="ml-2 text-sm"> Notify on API errors (Placeholder)</span>
+                            </label>
+                        </div>
+                    </div>
+                 </div>
+
+                  <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+                        <i class="material-icons mr-2">security</i> Security & Access
+                    </h2>
+                     <div class="rounded-lg bg-white dark:bg-gray-800 p-4 shadow">
+                          <div class="flex flex-col space-y-4 text-gray-700 dark:text-gray-300">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="save-api-key">
+                                <span class="ml-2 text-sm"> Save API Key locally (Use with caution! Placeholder)</span>
+                            </label>
+                             <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="save-sheet-id" checked>
+                                <span class="ml-2 text-sm"> Save Sheet ID locally (Placeholder)</span>
+                            </label>
+                        </div>
+                    </div>
+                 </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Include script file -->
+    <script src="script.js"></script>
+
+</body>
+</html>
