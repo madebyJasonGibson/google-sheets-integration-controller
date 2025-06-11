@@ -1,0 +1,63 @@
+:root {
+    font-family: 'Roboto', sans-serif;
+    --primary: #a855f7;
+    --primary-dark: #7e22ce;
+    --secondary: #10b981;
+    --accent: #f59e0b;
+    --bg: #f9fafb;
+    --text: #111827;
+    --card-bg: #ffffff;
+}
+.dark-mode {
+    --primary: #8b5cf6;
+    --primary-dark: #6d28d9;
+    --secondary: #059669;
+    --accent: #d97706;
+    --bg: #1f2937;
+    --text: #f3f4f6;
+    --card-bg: #374151;
+}
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    transition: all 0.3s ease;
+}
+.sidebar {
+    background-color: var(--card-bg);
+}
+.card {
+    background-color: var(--card-bg);
+    color: var(--text);
+}
+.material-icons {
+    vertical-align: middle;
+    font-size: 1.5rem;
+}
+.sidebar {
+    transition: all 0.3s ease;
+}
+.sidebar.collapsed {
+    width: 64px;
+}
+.sidebar.collapsed .nav-text {
+    display: none;
+}
+/* Add styles for active navigation link */
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1); /* Or a theme-appropriate highlight */
+    color: var(--primary); /* Use primary color */
+}
+/* Correct the dark mode icon colors */
+.dark-mode .material-icons {
+    color: var(--text); /* Ensure icon color is readable in dark mode */
+}
+.dark-mode .hover\:bg-fuchsia-50:hover {
+    background-color: var(--primary-dark); /* Darker hover for dark mode sidebar */
+    color: white;
+}
+.hover\:bg-fuchsia-50:hover i {
+     color: var(--primary);
+}
+.dark-mode .hover\:bg-fuchsia-50:hover i {
+     color: white;
+}
