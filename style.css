@@ -139,24 +139,20 @@ button {
 }
 
 /* Dark mode toggle button styling */
-.p-2.rounded-full.bg-gray-200 {
+.p-2.rounded-full {
     background-color: var(--code-bg); /* Use a gray from theme */
-    color: var(--text);
-}
-.dark-mode .p-2.rounded-full.bg-gray-600 { /* Corrected dark mode selector */
-    background-color: var(--code-bg); /* Use a gray from dark theme */
     color: var(--text);
 }
 
 /* Response/Code Blocks */
-#response, #api-response, #data-response {
+#response, #api-response, #data-response, #integrations-response {
     background-color: var(--code-bg);
     color: var(--code-text);
     font-family: monospace;
     white-space: pre-wrap; /* Preserve line breaks and wrap text */
-    word-break: break-all; /* Break long words */
+    word-break: break-word; /* Break long words */
 }
-.dark-mode #response, .dark-mode #api-response, .dark-mode #data-response {
+.dark-mode #response, .dark-mode #api-response, .dark-mode #data-response, .dark-mode #integrations-response {
     background-color: var(--code-bg);
     color: var(--code-text);
 }
@@ -170,7 +166,6 @@ button {
 
 /* Settings Card Backgrounds */
 .rounded-lg.bg-white { background-color: var(--card-bg); }
-.dark-mode .rounded-lg.bg-gray-800 { background-color: var(--card-bg); }
 
 /* Material Icons general style */
 .material-icons {
@@ -179,14 +174,11 @@ button {
     color: var(--text-light); /* Default icon color */
 }
 /* Ensure icons in colored buttons are white */
-button .material-icons {
+button:not(.p-2.rounded-full) .material-icons {
     color: white;
 }
 /* Special case for dark mode toggle button icon */
 .p-2.rounded-full .material-icons {
-     color: var(--text);
-}
-.dark-mode .p-2.rounded-full .material-icons {
      color: var(--text);
 }
 
@@ -194,4 +186,19 @@ button .material-icons {
 input[type="radio"], input[type="checkbox"] {
      accent-color: var(--primary); /* Applies primary color to checked state */
      color: var(--text-light); /* Base color (browser dependent) */
+}
+
+/* Adjust text color for elements using Tailwind gray-700/dark:gray-300 classes */
+/* These should inherit from --text and --text-light or be explicitly styled */
+.text-gray-700, .dark-mode .text-gray-300 {
+    color: var(--text);
+}
+.text-gray-400, .dark-mode .text-gray-400 {
+    color: var(--text-light);
+}
+.text-gray-800, .dark-mode .text-gray-200 {
+     color: var(--text); /* Should match main text */
+}
+.text-gray-600, .dark-mode .text-gray-400 {
+    color: var(--text-light); /* Should match lighter text */
 }
