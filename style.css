@@ -21,7 +21,7 @@
     --hover-bg-light: #fce5f9; /* fuchsia-50 */
 }
 .dark-mode {
-    --primary: #c084fc; /* fuchsia-400 */
+    --primary: #0d7bdb; /* fuchsia-400 */
     --primary-dark: #a78bfa; /* violet-400 */
     --secondary: #34d399; /* emerald-400 */
     --accent: #fbbf24; /* amber-400 */
