@@ -1,63 +1,197 @@
 :root {
     font-family: 'Roboto', sans-serif;
-    --primary: #a855f7;
-    --primary-dark: #7e22ce;
-    --secondary: #10b981;
-    --accent: #f59e0b;
-    --bg: #f9fafb;
-    --text: #111827;
+    --primary: #a855f7; /* fuchsia-600 */
+    --primary-dark: #7e22ce; /* fuchsia-700 */
+    --secondary: #10b981; /* emerald-500 */
+    --accent: #f59e0b; /* amber-500 */
+    --info: #3b82f6; /* blue-500 */
+    --warning: #f59e0b; /* amber-500 */
+    --success: #10b981; /* emerald-500 */
+    --danger: #ef4444; /* red-500 */
+    --text-on-primary: #ffffff;
+    --bg: #f3f4f6; /* gray-100 */
+    --text: #1f2937; /* gray-800 */
+    --text-light: #4b5563; /* gray-600 */
     --card-bg: #ffffff;
+    --border-color: #d1d5db; /* gray-300 */
+    --input-bg: #ffffff;
+    --input-text: #1f2937;
+    --code-bg: #e5e7eb; /* gray-200 */
+    --code-text: #1f2937;
+    --hover-bg-light: #fce5f9; /* fuchsia-50 */
 }
 .dark-mode {
-    --primary: #8b5cf6;
-    --primary-dark: #6d28d9;
-    --secondary: #059669;
-    --accent: #d97706;
-    --bg: #1f2937;
-    --text: #f3f4f6;
-    --card-bg: #374151;
+    --primary: #c084fc; /* fuchsia-400 */
+    --primary-dark: #a78bfa; /* violet-400 */
+    --secondary: #34d399; /* emerald-400 */
+    --accent: #fbbf24; /* amber-400 */
+     --info: #60a5fa; /* blue-400 */
+    --warning: #fbbf24; /* amber-400 */
+    --success: #34d399; /* emerald-400 */
+    --danger: #f87171; /* red-400 */
+    --text-on-primary: #ffffff;
+    --bg: #1f2937; /* gray-800 */
+    --text: #e5e7eb; /* gray-200 */
+    --text-light: #9ca3af; /* gray-400 */
+    --card-bg: #374151; /* gray-700 */
+    --border-color: #4b5563; /* gray-600 */
+    --input-bg: #4b5563; /* gray-600 */
+    --input-text: #e5e7eb; /* gray-200 */
+    --code-bg: #4b5563; /* gray-600 */
+    --code-text: #e5e7eb; /* gray-200 */
+    --hover-bg-light: #4c3d5b; /* custom dark hover */
 }
 body {
     background-color: var(--bg);
     color: var(--text);
     transition: all 0.3s ease;
+    font-family: 'Roboto', sans-serif;
 }
 .sidebar {
     background-color: var(--card-bg);
-}
-.card {
-    background-color: var(--card-bg);
-    color: var(--text);
-}
-.material-icons {
-    vertical-align: middle;
-    font-size: 1.5rem;
-}
-.sidebar {
     transition: all 0.3s ease;
 }
 .sidebar.collapsed {
-    width: 64px;
+    width: 64px; /* Same as tailwind w-16 */
 }
 .sidebar.collapsed .nav-text {
     display: none;
 }
-/* Add styles for active navigation link */
+.sidebar.collapsed .nav-link {
+    justify-content: center; /* Center icon when text is hidden */
+    padding: 0.75rem; /* Adjust padding */
+}
+.sidebar.collapsed .material-icons {
+     margin-right: 0 !important; /* Remove margin on icon */
+}
+
+.card {
+    background-color: var(--card-bg);
+    color: var(--text);
+}
+
+/* Styling for card header backgrounds */
+.bg-gradient-to-r.from-fuchsia-600.to-purple-600 {
+    background: linear-gradient(to right, var(--primary), var(--primary-dark));
+}
+
+/* Inputs, Textareas */
+input[type="text"], textarea {
+    border-color: var(--border-color);
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    transition: all 0.2s ease-in-out;
+}
+input[type="text"]:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary); /* Custom focus ring */
+}
+.dark-mode input[type="text"], .dark-mode textarea {
+     border-color: var(--border-color);
+     background-color: var(--input-bg);
+     color: var(--input-text);
+}
+.dark-mode input[type="text"]:focus, .dark-mode textarea:focus {
+     border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+
+/* Buttons */
+button {
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+/* Ensure specific button colors use CSS variables if you want them themeable */
+.bg-blue-600 { background-color: var(--info); }
+.hover\:bg-blue-700:hover { background-color: color-mix(in srgb, var(--info) 90%, black); } /* Slightly darker hover */
+.bg-amber-600 { background-color: var(--warning); }
+.hover\:bg-amber-700:hover { background-color: color-mix(in srgb, var(--warning) 90%, black); }
+.bg-slate-600 { background-color: var(--text-light); } /* Using text-light for slate/gray */
+.hover\:bg-slate-700:hover { background-color: color-mix(in srgb, var(--text-light) 90%, black); }
+.bg-fuchsia-600 { background-color: var(--primary); }
+.hover\:bg-fuchsia-700:hover { background-color: var(--primary-dark); }
+.bg-emerald-600 { background-color: var(--success); }
+.hover\:bg-emerald-700:hover { background-color: color-mix(in srgb, var(--success) 90%, black); }
+
+/* Sidebar Navigation Links */
+.nav-link {
+     color: var(--text-light); /* Default color */
+     /* hover:bg-fuchsia-50 is replaced below */
+}
+.nav-link:hover {
+     background-color: var(--hover-bg-light);
+     color: var(--primary); /* Highlight color on hover */
+}
 .nav-link.active {
-    background-color: rgba(255, 255, 255, 0.1); /* Or a theme-appropriate highlight */
-    color: var(--primary); /* Use primary color */
+    background-color: var(--hover-bg-light); /* Use the same hover color for active state */
+    color: var(--primary); /* Active link color */
+    font-weight: 500; /* Semibold */
 }
-/* Correct the dark mode icon colors */
-.dark-mode .material-icons {
-    color: var(--text); /* Ensure icon color is readable in dark mode */
+/* Icons within nav links */
+.nav-link .material-icons {
+     color: inherit; /* Icon color matches text color */
+     transition: color 0.2s ease-in-out;
 }
-.dark-mode .hover\:bg-fuchsia-50:hover {
-    background-color: var(--primary-dark); /* Darker hover for dark mode sidebar */
+.nav-link:hover .material-icons {
+     color: var(--primary); /* Icon color matches text color on hover */
+}
+.nav-link.active .material-icons {
+    color: var(--primary); /* Icon color matches active text color */
+}
+
+/* Dark mode toggle button styling */
+.p-2.rounded-full.bg-gray-200 {
+    background-color: var(--code-bg); /* Use a gray from theme */
+    color: var(--text);
+}
+.dark-mode .p-2.rounded-full.bg-gray-600 { /* Corrected dark mode selector */
+    background-color: var(--code-bg); /* Use a gray from dark theme */
+    color: var(--text);
+}
+
+/* Response/Code Blocks */
+#response, #api-response, #data-response {
+    background-color: var(--code-bg);
+    color: var(--code-text);
+    font-family: monospace;
+    white-space: pre-wrap; /* Preserve line breaks and wrap text */
+    word-break: break-all; /* Break long words */
+}
+.dark-mode #response, .dark-mode #api-response, .dark-mode #data-response {
+    background-color: var(--code-bg);
+    color: var(--code-text);
+}
+
+/* Quick Info Boxes */
+.rounded-lg.bg-blue-50 { background-color: color-mix(in srgb, var(--info) 10%, white); color: color-mix(in srgb, var(--info) 80%, black); }
+.dark-mode .rounded-lg.bg-blue-800\/20 { background-color: color-mix(in srgb, var(--info) 20%, black); color: var(--info); }
+
+.rounded-lg.bg-purple-50 { background-color: color-mix(in srgb, var(--primary) 10%, white); color: color-mix(in srgb, var(--primary) 80%, black); }
+.dark-mode .rounded-lg.bg-purple-800\/20 { background-color: color-mix(in srgb, var(--primary) 20%, black); color: var(--primary); }
+
+/* Settings Card Backgrounds */
+.rounded-lg.bg-white { background-color: var(--card-bg); }
+.dark-mode .rounded-lg.bg-gray-800 { background-color: var(--card-bg); }
+
+/* Material Icons general style */
+.material-icons {
+    vertical-align: middle;
+    font-size: 1.5rem; /* Standard icon size */
+    color: var(--text-light); /* Default icon color */
+}
+/* Ensure icons in colored buttons are white */
+button .material-icons {
     color: white;
 }
-.hover\:bg-fuchsia-50:hover i {
-     color: var(--primary);
+/* Special case for dark mode toggle button icon */
+.p-2.rounded-full .material-icons {
+     color: var(--text);
 }
-.dark-mode .hover\:bg-fuchsia-50:hover i {
-     color: white;
+.dark-mode .p-2.rounded-full .material-icons {
+     color: var(--text);
+}
+
+/* Radio button / Checkbox styling - Basic theming */
+input[type="radio"], input[type="checkbox"] {
+     accent-color: var(--primary); /* Applies primary color to checked state */
+     color: var(--text-light); /* Base color (browser dependent) */
 }
