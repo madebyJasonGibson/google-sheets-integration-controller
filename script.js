@@ -1,5 +1,9 @@
 // removed const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets'; // Moved to top level if needed globally or pass as arg
 
+const API_HISTORY_STORAGE_KEY = 'sheetMateApiHistory';
+const SETTINGS_STORAGE_KEY = 'sheetMateSettings';
+const MAX_HISTORY_ENTRIES = 20; // Limit the number of history entries
+
 function getConfig() {
     return {
         sheetId: document.getElementById('sheetId').value,
@@ -10,41 +14,146 @@ function getConfig() {
 // Function to show response in the correct section
 function showResponse(data, section = 'mainContent') {
     let responseElementId;
-    if (section === 'api-section') {
-        responseElementId = 'api-response';
-    } else if (section === 'data-operations-section') {
-         responseElementId = 'data-response';
-    } else {
-         responseElementId = 'response'; // Default for mainContent
+    // Determine the correct response element based on the section
+    switch (section) {
+        case 'api-section':
+            responseElementId = 'api-response';
+            break;
+        case 'data-operations-section':
+            responseElementId = 'data-response';
+            break;
+        case 'settings-section':
+             // Settings section doesn't have a dedicated response area for API calls
+             // We can log to console or show a specific message if needed
+             console.log("Settings related response:", data);
+             return; // Don't try to update a UI element that doesn't exist
+        default:
+            responseElementId = 'response'; // Default for mainContent
     }
+
     const responseElement = document.getElementById(responseElementId);
     if (responseElement) {
-         responseElement.textContent = JSON.stringify(data, null, 2);
+        try {
+             // Use JSON.stringify with indentation for readability
+             responseElement.textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+             // Handle cases where data might not be JSON serializable
+             responseElement.textContent = String(data);
+        }
     } else {
          console.error(`Response element with ID ${responseElementId} not found.`);
          // Fallback to console if UI element isn't ready
-         console.log("API Response:", data);
+         console.log(`API Response (${section}):`, data);
     }
 }
 
 function showError(error, section = 'mainContent') {
-    console.error(error);
-    const errorData = error.response ? error.response.data : error.message;
+    console.error("API Error:", error);
+    const errorData = error.response ? error.response.data : { message: error.message };
     showResponse({ error: errorData }, section);
+    logApiRequest(error.config?.url, error.config?.method, error.config?.data, null, errorData); // Log the error
+}
+
+// --- API History Management ---
+function getApiHistory() {
+    try {
+        const history = localStorage.getItem(API_HISTORY_STORAGE_KEY);
+        return history ? JSON.parse(history) : [];
+    } catch (e) {
+        console.error("Failed to load API history from local storage:", e);
+        return [];
+    }
+}
+
+function saveApiHistory(history) {
+    try {
+        localStorage.setItem(API_HISTORY_STORAGE_KEY, JSON.stringify(history));
+    } catch (e) {
+        console.error("Failed to save API history to local storage:", e);
+    }
+}
+
+function logApiRequest(url, method, data, response, error) {
+    const history = getApiHistory();
+    const timestamp = new Date().toISOString();
+    const entry = {
+        timestamp,
+        url: url || 'N/A',
+        method: method || 'N/A',
+        requestData: data, // Log request payload
+        responseData: response, // Log successful response data
+        error: error // Log error details
+    };
+    history.unshift(entry); // Add to the beginning
+    while (history.length > MAX_HISTORY_ENTRIES) {
+        history.pop(); // Remove oldest entry if exceeding limit
+    }
+    saveApiHistory(history);
+}
+
+function showApiHistory() {
+    const history = getApiHistory();
+    const historyDisplay = document.getElementById('api-response'); // Use the API section response area
+    if (!historyDisplay) {
+        console.error("API history display element not found.");
+        return;
+    }
+
+    if (history.length === 0) {
+        historyDisplay.textContent = "No API history recorded yet.";
+        return;
+    }
+
+    // Format history for display
+    const formattedHistory = history.map(entry => {
+        let details = `Timestamp: ${entry.timestamp}\nMethod: ${entry.method}\nURL: ${entry.url}\n`;
+        if (entry.requestData) {
+            details += `Request Data: ${JSON.stringify(entry.requestData, null, 2)}\n`;
+        }
+        if (entry.responseData) {
+             // Truncate large responses for history display
+             const responseString = JSON.stringify(entry.responseData, null, 2);
+             details += `Response Data: ${responseString.substring(0, 500)}${responseString.length > 500 ? '...' : ''}\n`;
+        }
+        if (entry.error) {
+            details += `Error: ${JSON.stringify(entry.error, null, 2)}\n`;
+        }
+        return `--- API Call ---\n${details}`;
+    }).join('\n\n'); // Separate entries with double newlines
+
+    historyDisplay.textContent = formattedHistory;
+    // Optional: Add a title above the history display
+    // document.getElementById('api-section').querySelector('.space-y-4 h2').textContent = 'API Call History';
+}
+
+// --- API Call Wrappers with Logging ---
+async function fetchFromSheets(url, method = 'GET', data = null) {
+    const config = getConfig();
+    if (!config.sheetId || !config.apiKey) {
+       throw new Error("Sheet ID or API Key is missing.");
+    }
+
+    const fullUrl = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/${url}&key=${config.apiKey}`;
+    const requestConfig = {
+        method: method,
+        url: fullUrl,
+        data: data
+    };
+
+    try {
+        const response = await axios(requestConfig);
+        logApiRequest(fullUrl, method, data, response.data, null); // Log success
+        return response.data;
+    } catch (error) {
+         // Log error within showError
+        throw error; // Re-throw to be caught by the caller for UI display
+    }
 }
 
 async function getSheetData() {
     try {
-        const config = getConfig();
-         if (!config.sheetId || !config.apiKey) {
-            showError("Sheet ID or API Key is missing.", 'data-operations-section');
-            return;
-        }
-        // Using axios directly as it's loaded via CDN
-        const response = await axios.get(
-            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/Sheet1?key=${config.apiKey}`
-        );
-        showResponse(response.data, 'data-operations-section');
+        const data = await fetchFromSheets('values/Sheet1?'); // Parameters after '?'
+        showResponse(data, 'data-operations-section');
     } catch (error) {
         showError(error, 'data-operations-section');
     }
@@ -52,11 +161,6 @@ async function getSheetData() {
 
 async function appendData() {
     try {
-        const config = getConfig();
-         if (!config.sheetId || !config.apiKey) {
-            showError("Sheet ID or API Key is missing.", 'data-operations-section');
-            return;
-        }
         const dataInput = document.getElementById('appendDataInput').value;
         let newRow;
         try {
@@ -64,24 +168,20 @@ async function appendData() {
             if (!Array.isArray(newRow)) {
                 throw new Error("Input must be a JSON array.");
             }
-             // Sheets API expects an array of arrays for values when appending/updating ranges
-             newRow = [newRow];
+            // Sheets API expects an array of arrays for values when appending/updating ranges
+            newRow = [newRow];
         } catch (e) {
              showError("Invalid JSON array format for append data.", 'data-operations-section');
              console.error("Parsing error:", e);
              return;
         }
 
-        // Using axios directly as it's loaded via CDN
-        const response = await axios.post(
-            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/Sheet1:append?valueInputOption=RAW&key=${config.apiKey}`,
-            {
-                range: "Sheet1", // Can specify a starting range, append finds the next available row
-                majorDimension: "ROWS",
-                values: newRow // Expects array of arrays
-            }
-        );
-        showResponse(response.data, 'data-operations-section');
+        const response = await fetchFromSheets('values/Sheet1:append?valueInputOption=RAW', 'POST', {
+            range: "Sheet1",
+            majorDimension: "ROWS",
+            values: newRow
+        });
+        showResponse(response, 'data-operations-section');
     } catch (error) {
         showError(error, 'data-operations-section');
     }
@@ -89,11 +189,6 @@ async function appendData() {
 
 async function updateData() {
     try {
-        const config = getConfig();
-         if (!config.sheetId || !config.apiKey) {
-            showError("Sheet ID or API Key is missing.", 'data-operations-section');
-            return;
-        }
         const rangeInput = document.getElementById('updateRangeInput').value;
         const dataInput = document.getElementById('updateDataInput').value;
 
@@ -114,50 +209,14 @@ async function updateData() {
              return;
         }
 
-        // Using axios directly as it's loaded via CDN
-        const response = await axios.put(
-            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(rangeInput)}?valueInputOption=RAW&key=${config.apiKey}`,
-            {
-                range: rangeInput,
-                majorDimension: "ROWS",
-                values: updatedValues // Expects array of arrays
-            }
-        );
-        showResponse(response.data, 'data-operations-section');
+        const response = await fetchFromSheets(`values/${encodeURIComponent(rangeInput)}?valueInputOption=RAW`, 'PUT', {
+            range: rangeInput,
+            majorDimension: "ROWS",
+            values: updatedValues
+        });
+        showResponse(response, 'data-operations-section');
     } catch (error) {
         showError(error, 'data-operations-section');
-    }
-}
-
-// Function to toggle sidebar
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('collapsed');
-}
-
-// Function to show specific content section
-function showSection(sectionId, sourceElement) {
-    // Hide all content sections
-    const sections = ['mainContent', 'api-section', 'data-operations-section', 'settings-section'];
-    sections.forEach(id => {
-        const sec = document.getElementById(id);
-        if (sec) sec.style.display = 'none';
-    });
-    
-    // Show selected section
-    const sectionToShow = document.getElementById(sectionId);
-    if (sectionToShow) {
-        sectionToShow.style.display = 'block';
-    }
-
-    // Update active class on sidebar links
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => link.classList.remove('active', 'text-fuchsia-600', 'font-medium'));
-     navLinks.forEach(link => link.classList.add('hover:bg-fuchsia-50')); // Add hover back
-
-     if (sourceElement) {
-        sourceElement.classList.add('active', 'text-fuchsia-600', 'font-medium');
-         sourceElement.classList.remove('hover:bg-fuchsia-50'); // Remove hover on active
     }
 }
 
@@ -169,24 +228,183 @@ async function testApiConnection() {
             return;
         }
          // Fetching metadata is a lightweight way to test connection/auth
-        // Using axios directly as it's loaded via CDN
-        const response = await axios.get(`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}?key=${config.apiKey}&fields=spreadsheetId,properties.title`);
-        showResponse({ success: true, sheetTitle: response.data.properties.title }, 'api-section');
+        const data = await fetchFromSheets('?fields=spreadsheetId,properties.title', 'GET');
+        showResponse({ success: true, sheetTitle: data.properties.title, spreadsheetId: data.spreadsheetId }, 'api-section');
     } catch (error) {
         showError(error, 'api-section');
     }
 }
 
 function clearCache() {
-    // Clear local config inputs - does not clear actual cache if any were implemented
-    document.getElementById('sheetId').value = '';
-    document.getElementById('apiKey').value = '';
-    showResponse({ message: "Local input fields cleared. Note: This application currently does not implement advanced caching mechanisms." }, 'api-section');
+    // This function clears the *local storage* for config and history
+    try {
+        localStorage.removeItem(SETTINGS_STORAGE_KEY);
+        localStorage.removeItem(API_HISTORY_STORAGE_KEY);
+
+        // Clear input fields
+        document.getElementById('sheetId').value = '';
+        document.getElementById('apiKey').value = '';
+
+        // Reset settings UI elements to default (or unloaded state)
+        resetSettingsUI();
+
+        showResponse({ message: "Local settings and API history cleared." }, 'api-section');
+        console.log("Local storage for settings and history cleared.");
+
+    } catch (e) {
+        console.error("Failed to clear local storage:", e);
+        showError({ message: "Failed to clear local storage.", error: e.message }, 'api-section');
+    }
 }
 
-function showApiHistory() {
-    // This is a placeholder function
-    showResponse({ message: "Audit log history feature not implemented yet." }, 'api-section');
+// --- Settings Management ---
+function saveSettings() {
+    const settings = {
+        darkMode: document.body.classList.contains('dark-mode'),
+        saveApiKey: document.querySelector('input[name="save-api-key"]').checked,
+        saveSheetId: document.querySelector('input[name="save-sheet-id"]').checked,
+        enableCaching: document.querySelector('input[name="data-cache"]').checked, // Placeholder state saved
+        autoRefresh: document.querySelector('input[name="autoload"]').checked, // Placeholder state saved
+        compressResponse: document.querySelector('input[name="compress-response"]').checked, // Placeholder state saved
+        enableNotifications: document.querySelector('input[name="notification"]').checked, // Placeholder state saved
+        notifyOnErrors: document.querySelector('input[name="notification-errors"]').checked // Placeholder state saved
+    };
+
+    // Only save sheetId and apiKey if the respective boxes are checked
+    if (settings.saveSheetId) {
+        settings.sheetId = document.getElementById('sheetId').value;
+    } else {
+        delete settings.sheetId; // Ensure it's not saved if box is unchecked
+    }
+     if (settings.saveApiKey) {
+        settings.apiKey = document.getElementById('apiKey').value;
+    } else {
+        delete settings.apiKey; // Ensure it's not saved if box is unchecked
+    }
+
+    try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        console.log("Settings saved to local storage.");
+    } catch (e) {
+        console.error("Failed to save settings to local storage:", e);
+    }
+}
+
+function loadSettings() {
+    try {
+        const settingsJson = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        if (!settingsJson) {
+             console.log("No settings found in local storage.");
+             // Apply default theme if no settings found
+             toggleDarkMode('light');
+             return;
+        }
+
+        const settings = JSON.parse(settingsJson);
+        console.log("Settings loaded from local storage:", settings);
+
+        // Apply loaded settings to the UI
+        // Theme
+        toggleDarkMode(settings.darkMode ? 'dark' : 'light');
+
+        // Save/Load inputs (Sheet ID, API Key)
+        document.querySelector('input[name="save-sheet-id"]').checked = settings.saveSheetId || false;
+        document.querySelector('input[name="save-api-key"]').checked = settings.saveApiKey || false;
+
+        // Load Sheet ID and API Key if the save setting was true
+        if (settings.saveSheetId && settings.sheetId) {
+            document.getElementById('sheetId').value = settings.sheetId;
+        } else {
+             document.getElementById('sheetId').value = ''; // Clear if not saved
+        }
+        if (settings.saveApiKey && settings.apiKey) {
+            document.getElementById('apiKey').value = settings.apiKey;
+        } else {
+             document.getElementById('apiKey').value = ''; // Clear if not saved
+        }
+
+        // Apply other placeholder settings states
+        document.querySelector('input[name="data-cache"]').checked = settings.enableCaching || false;
+        document.querySelector('input[name="autoload"]').checked = settings.autoRefresh || false;
+        document.querySelector('input[name="compress-response"]').checked = settings.compressResponse || false;
+        document.querySelector('input[name="notification"]').checked = settings.enableNotifications || false;
+        document.querySelector('input[name="notification-errors"]').checked = settings.notifyOnErrors || false;
+
+    } catch (e) {
+        console.error("Failed to load settings from local storage:", e);
+        // Ensure a default state is applied even if loading fails
+         toggleDarkMode('light');
+         resetSettingsUI();
+    }
+}
+
+function resetSettingsUI() {
+     // Set checkboxes to unchecked, radio to light
+     document.querySelector('input[name="save-api-key"]').checked = false;
+     document.querySelector('input[name="save-sheet-id"]').checked = false;
+     document.querySelector('input[name="data-cache"]').checked = false;
+     document.querySelector('input[name="autoload"]').checked = false;
+     document.querySelector('input[name="compress-response"]').checked = false;
+     document.querySelector('input[name="notification"]').checked = false;
+     document.querySelector('input[name="notification-errors"]').checked = false;
+
+     const radios = document.querySelectorAll('input[type="radio"][name="theme-radio"]');
+      radios.forEach(radio => {
+          radio.checked = (radio.value === 'light'); // Check light mode radio
+      });
+}
+
+// --- UI Functions ---
+// Function to toggle sidebar
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('collapsed');
+    // Optional: adjust content area margin/width if needed
+}
+
+// Function to show specific content section
+function showSection(sectionId, sourceElement) {
+    // Hide all content sections
+    const sections = ['mainContent', 'api-section', 'data-operations-section', 'settings-section'];
+    sections.forEach(id => {
+        const sec = document.getElementById(id);
+        if (sec) sec.style.display = 'none';
+    });
+
+    // Show selected section
+    const sectionToShow = document.getElementById(sectionId);
+    if (sectionToShow) {
+        sectionToShow.style.display = 'block';
+        // If navigating to API history, update its display
+        if (sectionId === 'api-section') {
+             // Check if the 'Audit Logs' button was specifically clicked, otherwise show default response area
+             // For now, always refresh the history view when the API section is shown.
+             // Future improvement: Only show history if user clicks the audit log button within the API section.
+             // As requested, the button calls showApiHistory directly, so this isn't strictly needed here,
+             // but it ensures the area is cleared/initialised correctly when section is changed.
+             // Let's ensure the default 'No response yet' or history is displayed on section entry.
+             document.getElementById('api-response').textContent = 'Select an API tool above or view history.';
+
+        } else if (sectionId === 'data-operations-section') {
+             document.getElementById('data-response').textContent = 'Select a data operation above.';
+        } else if (sectionId === 'mainContent') {
+             document.getElementById('response').textContent = 'Configure Sheet ID and API Key above.';
+        } else if (sectionId === 'settings-section') {
+             // Settings section doesn't have a response area
+        }
+    }
+
+    // Update active class on sidebar links
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.classList.remove('active', 'text-fuchsia-600', 'font-medium');
+        link.classList.add('hover:bg-fuchsia-50'); // Add hover back
+    });
+
+     if (sourceElement) {
+        sourceElement.classList.add('active', 'text-fuchsia-600', 'font-medium');
+         sourceElement.classList.remove('hover:bg-fuchsia-50'); // Remove hover on active
+    }
 }
 
 function toggleDarkMode(mode) {
@@ -194,17 +412,20 @@ function toggleDarkMode(mode) {
     const iconButton = document.getElementById('theme-icon2'); // Button icon
      const iconSettings = document.getElementById('theme-icon'); // Settings icon
 
+    let isDarkMode;
     if (mode === 'dark') {
         body.classList.add('dark-mode');
+        isDarkMode = true;
     } else if (mode === 'light') {
         body.classList.remove('dark-mode');
+        isDarkMode = false;
     } else {
         // If mode is not specified, toggle based on current state
+        isDarkMode = !body.classList.contains('dark-mode');
         body.classList.toggle('dark-mode');
     }
 
     // Update icons based on the final state
-    const isDarkMode = body.classList.contains('dark-mode');
     if (iconButton) iconButton.textContent = isDarkMode ? 'light_mode' : 'dark_mode';
      if (iconSettings) iconSettings.textContent = isDarkMode ? 'light_mode' : 'dark_mode';
 
@@ -213,25 +434,34 @@ function toggleDarkMode(mode) {
      radios.forEach(radio => {
          radio.checked = (radio.value === 'dark' && isDarkMode) || (radio.value === 'light' && !isDarkMode);
      });
+
+     // Save theme preference immediately
+     saveSettings();
 }
 
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Set default section to mainContent (Dashboard)
+     // Load settings first to apply theme and input values
+     loadSettings();
+
+    // Set default section to mainContent (Dashboard) if no specific section was stored/loaded
+     // Or simply show the default section after loading inputs
      showSection('mainContent', document.querySelector('.nav-link'));
 
-    // Add event listeners for theme radio buttons
-    const radios = document.querySelectorAll('input[type="radio"][name="theme-radio"]');
-    radios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.checked) {
-               toggleDarkMode(e.target.value);
-            }
-        });
+    // Add event listeners for settings controls to save state
+    const settingsInputs = document.querySelectorAll('#settings-section input, #settings-section select, #settings-section textarea');
+    settingsInputs.forEach(input => {
+        // Listen for 'change' on checkboxes/radios/selects, 'input' on text fields
+        const eventType = (input.type === 'checkbox' || input.type === 'radio' || input.tagName === 'SELECT') ? 'change' : 'input';
+        input.addEventListener(eventType, saveSettings);
     });
 
-     // Initialize theme based on default radio button state (light mode checked)
-     // Or check local storage if persistence was implemented
-     toggleDarkMode('light'); // Start in light mode by default, update icons/radios
+     // Listen for changes on sheetId and apiKey inputs if their 'save locally' boxes are checked
+     // We need to trigger saveSettings when these specific inputs change IF the save checkbox is checked.
+     // The saveSettings function already checks the box state before saving the values.
+     // We just need to ensure saveSettings is called when they change.
+    document.getElementById('sheetId').addEventListener('input', saveSettings);
+    document.getElementById('apiKey').addEventListener('input', saveSettings);
 
      // Expose functions globally so they can be called from inline onclick attributes
      window.toggleSidebar = toggleSidebar;
@@ -243,4 +473,15 @@ document.addEventListener('DOMContentLoaded', () => {
      window.testApiConnection = testApiConnection;
      window.clearCache = clearCache;
      window.showApiHistory = showApiHistory;
+
+     // Placeholder functions that were called directly by onclick but now have logic
+     // No need to expose others unless they are called from HTML
 });
+
+// Note: Placeholder functions like 'enable local caching', 'auto-refresh', etc.,
+// are now simply saving their state to localStorage via the generic settings listener.
+// Their actual *effect* on the application logic (like caching API responses,
+// periodically fetching data, or altering request headers) is not implemented
+// in this client-side code, as that would require more complex state management
+// or a backend component. The saved state serves as a UI-only representation
+// of these "settings".
